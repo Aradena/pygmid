@@ -97,7 +97,7 @@ def XTRACT(lk, mode, **kwargs):
                 ax[1].set_xlabel(r"$V_{DS}$ [V]")
                 ax[1].set_title("Derivative of $n$ vs $V_{DS}$")
                 ax[2].plot(UDS2, diff2n, VDS, d2n, '*')
-                ax[1].set_ylabel(r"$\frac{d^2(n)}{d(V_{DS})^2}$")
+                ax[2].set_ylabel(r"$\frac{d^2(n)}{d(V_{DS})^2}$")
                 ax[2].set_xlabel(r"$V_{DS}$ [V]")
                 ax[2].set_title("Second derivative of $n$ vs $V_{DS}$")
                 plt.tight_layout()
