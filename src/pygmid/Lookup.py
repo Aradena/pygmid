@@ -6,6 +6,7 @@ from scipy.interpolate import interpn
 import pickle
 import prettytable
 import h5py
+import mat73 as m73
 
 from .constants import *
 from .numerical import interp1
@@ -73,7 +74,15 @@ class Lookup:
         """
         if filename.endswith('.mat'):
             # parse .mat file into dict object
-            mat = scipy.io.loadmat(filename, matlab_compatible=True)
+            try:
+                mat = scipy.io.loadmat(filename, matlab_compatible=True)
+            except NotImplementedError:
+                print(f"File {filename} is MATLAB v7.3. Falling back to mat73 reader.")
+                try:
+                    mat = m73.loadmat(filename)
+                    return mat[list(mat.keys())[0]]
+                except Exception as e:
+                    raise IOError(f"Failed to load MATLAB v7.3 file using mat73")
 
             for k in mat.keys():
                 if not( k.startswith('__') and k.endswith('__') ):
