@@ -159,8 +159,8 @@ class Sweep:
         # remove directory in case it contains number. Only want to sort based on filename itself
         filelist = sorted([os.path.basename(f) for f in file_paths], key=self._extract_number_regex)
         
-        nmos = {f"mn.{param}" : np.zeros((len(self._config['SWEEP']['VGS']), len(self._config['SWEEP']['VDS']))) for param in params}
-        pmos = {f"mp.{param}" : np.zeros((len(self._config['SWEEP']['VGS']), len(self._config['SWEEP']['VDS']))) for param in params}
+        nmos = {f"mn.m1:{param}" : np.zeros((len(self._config['SWEEP']['VGS']), len(self._config['SWEEP']['VDS']))) for param in params}
+        pmos = {f"mp.m1:{param}" : np.zeros((len(self._config['SWEEP']['VGS']), len(self._config['SWEEP']['VDS']))) for param in params}
         for VDS_i, f in enumerate(filelist):
             # reconstruct path
             file_path = os.path.join(sweep_output_directory, f)
@@ -168,7 +168,7 @@ class Sweep:
             psf = psf_utils.PSF( file_path )
             
             for param in params:
-                nmos[f'mn.{param}'][:,VDS_i] = (psf.get_signal(f"mn.{param}").ordinate).T
-                pmos[f'mp.{param}'][:,VDS_i] = (psf.get_signal(f"mp.{param}").ordinate).T
+                nmos[f'mn.m1:{param}'][:,VDS_i] = (psf.get_signal(f"mn.{param}").ordinate).T
+                pmos[f'mp.m1:{param}'][:,VDS_i] = (psf.get_signal(f"mp.{param}").ordinate).T
         
         return (nmos, pmos)
