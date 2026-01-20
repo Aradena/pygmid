@@ -97,8 +97,8 @@ class SweepConfig(ABC):
     
         return '\n'.join((
             f"//pysweep.scs",
-            f"include {modelfile}",
-            f'include "{paramfile}"\n',   
+            *(f"include {each_modelfile}" for each_modelfile in modelfile.split(',')),
+            f'include "{paramfile}"\n',
             f'save *:oppoint',
             f'\n',
             f'parameters gs=0.498 ds=0.2 L=length*1e-6 Wtot={width}e-6 W=500n nf={NFING}',
