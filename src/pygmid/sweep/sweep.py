@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
 from warnings import warn
+from typing import Union
 
 import numpy as np
 import psf_utils
@@ -29,8 +30,8 @@ SPECTRE_ARGS = ['+escchars',
 @dataclass
 class Sweep:
     config_file_path: str
-    _config: SweepConfig | None = field(default_factory=lambda: None, repr=False)
-    # _simulator: SpectreSimulator = field(default_factory=lambda: SpectreSimulator(Sweep._config, *SPECTRE_ARGS), repr=False)
+    _config: Union[SweepConfig, None] = field(default_factory=lambda: None, repr=False)
+    _simulator: SpectreSimulator = field(default_factory=lambda: SpectreSimulator(*SPECTRE_ARGS), repr=False)
 
     def __post_init__(self):
         for f in filter(lambda p: p.suffix == ".py", map(lambda p: Path(p), os.listdir(os.getcwd()))):
@@ -49,7 +50,7 @@ class Sweep:
         if self._config is None:
             warn("No Config subclass found in the current directory. Using default Config class.", ImportWarning)
             self._config = Config(self.config_file_path)
-        self._simulator = SpectreSimulator(self._config._config, *SPECTRE_ARGS)
+        # self._simulator = SpectreSimulator(self._config._config, *SPECTRE_ARGS)
 
     def run(self):
         

@@ -4,10 +4,12 @@ from paramiko import SSHClient, SSHException
 
 
 class SpectreSimulator:
+    # def __init__(self, _config, *args):
+    #     self.__args = list(args)
+        # self._config = _config
+        # self._init_ssh()
     def __init__(self, _config, *args):
         self.__args = list(args)
-        self._config = _config
-        self._init_ssh()
 
     @property
     def directory(self):
