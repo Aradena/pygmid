@@ -73,7 +73,7 @@ class Sweep:
             futures = []
             for i, L in enumerate(tqdm(Ls,desc="Sweeping L")):
                 for j, VSB in enumerate(tqdm(VSBs, desc="Sweeping VSB", leave=False)):
-                    self._config._write_params(length=L, sb=VSB)
+                    self._config._write_params(length=L, vsb=VSB)
                     
                     sim_path = f"./sweep/psf_{i}_{j}"
                     self._simulator.directory = sim_path
