@@ -148,10 +148,10 @@ class Sweep:
         """
         if sweep_type == "DC":
             filename_pattern = 'sweepvds-*_sweepvgs.dc'
-            params = [ '.'.join(k[0].split('.')[1:]) for k in self._config['n'] ]
+            params = [ '.'.join(k[0].split(':')[1:]) for k in self._config['n'] ]
         elif sweep_type == "NOISE":
             filename_pattern = 'sweepvds_noise-*_sweepvgs_noise.noise'
-            params = [ '.'.join(k[0].split('.')[1:]) for k in self._config['n_noise'] ]
+            params = [ '.'.join(k[0].split(':')[1:]) for k in self._config['n_noise'] ]
         else:
             raise ValueError(f"Unknown sweep type: {sweep_type}. Must be 'DC' or 'NOISE'.")
 
