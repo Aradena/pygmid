@@ -88,8 +88,10 @@ class SweepConfig(ABC):
         except json.decoder.JSONDecodeError:
             raise "Error parsing config: make sure MP has no weird characters in it, and that the list isn't terminated with a trailing ','"
         temp = float(self._config['MODEL']['TEMP'])-273.15
+        VDS_min = min(self._config['SWEEP']['VDS'])
         VDS_max = max(self._config['SWEEP']['VDS'])
-        VDS_step = self._config['SWEEP']['VDS'][1] - self._config['SWEEP']['VDS'][0] 
+        VDS_step = self._config['SWEEP']['VDS'][1] - self._config['SWEEP']['VDS'][0]
+        VGS_min = min(self._config['SWEEP']['VGS'])
         VGS_max = max(self._config['SWEEP']['VGS'])
         VGS_step = self._config['SWEEP']['VGS'][1] - self._config['SWEEP']['VGS'][0]
     
@@ -117,11 +119,11 @@ class SweepConfig(ABC):
             f'mn (vdn vgn 0 vbn) {modeln} {mn_supplement}',
             f'\n',	 
             f'simulatorOptions options gmin=1e-13 reltol=1e-4 vabstol=1e-6 iabstol=1e-10 temp={temp} tnom=27',  
-            f'sweepvds sweep param=ds start=0 stop={VDS_max} step={VDS_step} {{',  
-            f'sweepvgs dc param=gs start=0 stop={VGS_max} step={VGS_step}',  
+            f'sweepvds sweep param=ds start={VDS_min} stop={VDS_max} step={VDS_step} {{',
+            f'sweepvgs dc param=gs start={VGS_min} stop={VGS_max} step={VGS_step}',
             f'}}', 
-            f'sweepvds_noise sweep param=ds start=0 stop={VDS_max} step={VDS_step} {{', 
-            f'	sweepvgs_noise noise freq=1 oprobe=vnoi param=gs start=0 stop={VGS_max} step={VGS_step}', 
+            f'sweepvds_noise sweep param=ds start={VDS_min} stop={VDS_max} step={VDS_step} {{',
+            f'	sweepvgs_noise noise freq=1 oprobe=vnoi param=gs start={VGS_min} stop={VGS_max} step={VGS_step}',
             f'}}'
         ))
         with open('pysweep.scs', 'w') as outfile:

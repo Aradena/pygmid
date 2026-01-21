@@ -1,4 +1,5 @@
-import pygmid    
+import pygmid
 
-pygmid.sweep.run("config_xt018.cfg")
+if __name__ == "__main__":
+    pygmid.sweep.run("config_xt018.cfg")
 

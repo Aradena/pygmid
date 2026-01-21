@@ -5,6 +5,7 @@ import os
 import pickle
 import re
 import shutil
+import time
 from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
@@ -74,14 +75,26 @@ class Sweep:
             for i, L in enumerate(tqdm(Ls,desc="Sweeping L")):
                 for j, VSB in enumerate(tqdm(VSBs, desc="Sweeping VSB", leave=False)):
                     self._config._write_params(length=L, vsb=VSB)
-                    
+
                     sim_path = f"./sweep/psf_{i}_{j}"
                     self._simulator.directory = sim_path
-                    cp = self._simulator.run('pysweep.scs')
+                    # cp = self._simulator.run('pysweep.scs')
 
                     futures.append(executor.submit(self.parse_sim, *[sim_path]))
-            
+
             concurrent.futures.wait(futures)
+
+        # A list to store futures for data parsing
+        # futures = []
+        # for i, L in enumerate(tqdm(Ls,desc="Sweeping L")):
+        #     for j, VSB in enumerate(tqdm(VSBs, desc="Sweeping VSB", leave=False)):
+        #         self._config._write_params(length=L, vsb=VSB)
+        #
+        #         sim_path = f"./sweep/psf_{i}_{j}"
+        #         self._simulator.directory = sim_path
+        #         # cp = self._simulator.run('pysweep.scs')
+        #
+        #         futures.append(self.parse_sim(sim_path))
 
         for f in futures:
             i, j , n_dict, p_dict, nn_dict, pn_dict = f.result()
@@ -159,8 +172,8 @@ class Sweep:
         # remove directory in case it contains number. Only want to sort based on filename itself
         filelist = sorted([os.path.basename(f) for f in file_paths], key=self._extract_number_regex)
         
-        nmos = {f"mn.{param}" : np.zeros((len(self._config['SWEEP']['VGS']), len(self._config['SWEEP']['VDS']))) for param in params}
-        pmos = {f"mp.{param}" : np.zeros((len(self._config['SWEEP']['VGS']), len(self._config['SWEEP']['VDS']))) for param in params}
+        nmos = {f"mn:{param}" : np.zeros((len(self._config['SWEEP']['VGS']), len(self._config['SWEEP']['VDS']))) for param in params}
+        pmos = {f"mp:{param}" : np.zeros((len(self._config['SWEEP']['VGS']), len(self._config['SWEEP']['VDS']))) for param in params}
         for VDS_i, f in enumerate(filelist):
             # reconstruct path
             file_path = os.path.join(sweep_output_directory, f)
@@ -168,7 +181,7 @@ class Sweep:
             psf = psf_utils.PSF( file_path )
             
             for param in params:
-                nmos[f'mn.{param}'][:,VDS_i] = (psf.get_signal(f"mn.m1:{param}").ordinate).T
-                pmos[f'mp.{param}'][:,VDS_i] = (psf.get_signal(f"mp.m1:{param}").ordinate).T
+                nmos[f'mn:{param}'][:,VDS_i] = (psf.get_signal(f"mn.m1:{param}").ordinate).T
+                pmos[f'mp:{param}'][:,VDS_i] = (psf.get_signal(f"mp.m1:{param}").ordinate).T
         
         return (nmos, pmos)
