@@ -51,7 +51,6 @@ class Sweep:
         if self._config is None:
             warn("No Config subclass found in the current directory. Using default Config class.", ImportWarning)
             self._config = Config(self.config_file_path)
-        # self._simulator = SpectreSimulator(self._config._config, *SPECTRE_ARGS)
 
     def run(self):
         
@@ -83,18 +82,6 @@ class Sweep:
                     futures.append(executor.submit(self.parse_sim, *[sim_path]))
 
             concurrent.futures.wait(futures)
-
-        # A list to store futures for data parsing
-        # futures = []
-        # for i, L in enumerate(tqdm(Ls,desc="Sweeping L")):
-        #     for j, VSB in enumerate(tqdm(VSBs, desc="Sweeping VSB", leave=False)):
-        #         self._config._write_params(length=L, vsb=VSB)
-        #
-        #         sim_path = f"./sweep/psf_{i}_{j}"
-        #         self._simulator.directory = sim_path
-        #         # cp = self._simulator.run('pysweep.scs')
-        #
-        #         futures.append(self.parse_sim(sim_path))
 
         for f in futures:
             i, j , n_dict, p_dict, nn_dict, pn_dict = f.result()
