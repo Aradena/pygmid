@@ -78,7 +78,7 @@ class Sweep:
 
                     sim_path = f"./sweep/psf_{i}_{j}"
                     self._simulator.directory = sim_path
-                    # cp = self._simulator.run('pysweep.scs')
+                    cp = self._simulator.run('pysweep.scs')
 
                     futures.append(executor.submit(self.parse_sim, *[sim_path]))
 
