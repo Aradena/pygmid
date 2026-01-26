@@ -41,7 +41,8 @@ def load_parameters_65nm():
     d.Lcas = 0.4  # L0 ~ 60
     # d.rself = 0
     d.cself = 0
-    d.gm_id1 = np.linspace(3,27, 100)
+    # d.gm_id1 = np.linspace(3,27, 100)
+    d.gm_id1 = np.arange(3,27, 0.01)
     d.gamma = 0.7
 
     # NCH = lk('xt018_ne5.pkl')
@@ -107,16 +108,25 @@ def optimise_folded_cascode():
     s.fu1 = 1/2/np.pi*np.log(1/s.ed)/s.ts
     print("fp2/s.fu1 = %.2f gives a phase margin of about "%(fp2/s.fu1))
 
-    d.beta = beta_max*np.linspace(0.2,1,100)
+    # d.beta = beta_max*np.linspace(0.2,1,1000)
+    d.beta = beta_max*np.arange(0.2,1,0.001)
     plt.figure()
-    for i,L in enumerate(d.L1):
-        d.L1 = L
-        r = folded_cascode(NCH, PCH, s, d)
 
-        # plt.plot(r.gm_id1, r.id1*1e3, label='L = %.2f um'%d.L1)
-        plt.plot(r.gm_id1, r.rself, label='L = %.2f um'%d.L1)
+    for L in d.L1:
+        d.L1 = L
+        d.cself = 0
+        for i in range(1):
+            r = folded_cascode(NCH, PCH, s, d)
+
+            # find minimum current point
+            index_min_id1 = np.argmin(r.id1)
+            d.cself = r.cself[index_min_id1]
+
+        plt.plot(r.gm_id1, r.id1*1e3, label='L = %.2f um'%d.L1)
+        # plt.plot(r.gm_id1, r.rself, label='L = %.2f um'%d.L1)
 
     plt.ylabel(r"$I_D$ [mA]")
+    # plt.ylabel(r"$r_{self}$ [1]")
     plt.xlabel(r"$g_m/I_D$ [S/A]")
     plt.title(r'$I_D$ vs. $g_m/I_D$ for varying $L$')
     # plt.xlim([5, 27])
@@ -137,10 +147,10 @@ def folded_cascode(NCH, PCH, s, d):
     # Precomputation
     gm_id1 = d.gm_id1  # simplify saving singular optimum variable among input array
     gm1_gm3 = d.gm_id1 / d.gm_id_cas
-    gm_gds1 = NCH.look_up('GM_GDS', gm_id=d.gm_id1, L=d.L1)
+    gm_gds1 = PCH.look_up('GM_GDS', gm_id=d.gm_id1, L=d.L1)
     gm_gds2 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, L=d.Lcas)
     wT1 = NCH.look_up('GM_CGG', gm_id=d.gm_id1, L=d.L1)  # Transit frequency
-    cgd_cgg1 = NCH.look_up('CGD_CGG', gm_id=d.gm_id1, L=d.L1)
+    cgd_cgg1 = PCH.look_up('CGD_CGG', gm_id=d.gm_id1, L=d.L1)
     cdd_gm3 = NCH.look_up('CDD_GM', gm_id=d.gm_id_cas, L=d.Lcas)
     cdd_gm4 = PCH.look_up('CDD_GM', gm_id=d.gm_id_cas, L=d.Lcas)
 
@@ -157,7 +167,7 @@ def folded_cascode(NCH, PCH, s, d):
         alpha = 2*gamma1*(1+gamma5/gamma1*gm_id5/d.gm_id1+2*gamma2/gamma1*gm_id2/d.gm_id1)
 
         # Output capacitances
-        CLtot = alpha/beta/s.vod**2*sp.constants.Boltzmann*s.T
+        CLtot = alpha/beta/(s.vod**2)*sp.constants.Boltzmann*s.T
         # s.fan_out = FO = CL/CS   G = CS/CF   FO.G = CL/CF
         # CF = CLtot/(1+d.rself)/(s.fan_out*s.G+1-beta)
         CF = (CLtot-d.cself)/(s.fan_out*s.G+1-beta)
@@ -198,7 +208,7 @@ def folded_cascode(NCH, PCH, s, d):
     # m1.gamma.append(gamma)
     # plt.plot(np.array(m1.gm_id1), np.array(m1.gm_id1).reshape(-1, 1) * np.array(m1.id1))
 
-    gm34 = r.id1/d.gm_id_cas
+    gm34 = r.id1*d.gm_id_cas
     r.cself = gm34*(cdd_gm3+cdd_gm4)
     r.rself = r.cself/r.CLtot
 
