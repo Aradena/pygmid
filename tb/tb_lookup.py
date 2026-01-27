@@ -45,13 +45,39 @@ def load_parameters_65nm():
     d.gm_id1 = np.arange(3,27, 0.01)
     d.gamma = 0.7
 
-    # NCH = lk('xt018_ne5.pkl')
-    # PCH = lk('xt018_pe5.pkl')
-    # d.Lcas = 2  # 300 < L0 < 400  (50 with book techno in 65 nm)
-    # s.ts = 100e-9
-    # d.L1 = [0.5, 0.6, 0.7, 0.8]
-    # d.gm_id1 = np.linspace(3,25, 100)
-    # Lsweep = np.linspace(0.5,5,100)
+
+    return NCH, PCH, s, d, Lsweep
+
+def load_parameters_xt018():
+    #%% Load process data into pygmid lookup object
+    class d: pass # structure to collect design parameters
+    class s: pass  # structure to collect specs
+
+    NCH = lk('xt018_ne5.pkl')
+    PCH = lk('xt018_pe5.pkl')
+
+    # Cascode gm/id defined by output swing
+    common_mode_output_voltage = 0.6
+    output_swing = 0.8
+    Vds_min = (common_mode_output_voltage - output_swing/4)/2
+    gm_id_cas_max = 2/Vds_min
+    d.gm_id_cas = 15
+    Lsweep = np.linspace(0.5,5,100)
+
+    # Specifications
+    s.G = 2
+    s.ts = 100e-9
+    s.ed = 0.1e-2
+    s.vod = 400e-6  # total integrated noise
+    s.T = 300  # Kelvin
+    s.fan_out = 0.5
+
+    # Design variable
+    d.L1 = [0.5] #, 0.6, 0.7, 0.8]
+    d.Lcas = 2  # 300 < L0 < 400  (50 with book techno in 65 nm)
+    d.cself = 0
+    d.gm_id1 = np.arange(3,25, 0.01)
+    d.gamma = 0.7
 
     return NCH, PCH, s, d, Lsweep
 
@@ -66,7 +92,9 @@ def fmt(x):
 def optimise_folded_cascode():
     # %% Gm over Id methodology applied to folded-cascode OTA
 
-    NCH, PCH, s, d, Lsweep = load_parameters_65nm()
+    techno = 'xt018'
+    # NCH, PCH, s, d, Lsweep = load_parameters_65nm()
+    NCH, PCH, s, d, Lsweep = load_parameters_xt018()
 
     beta_max = 1/(1+s.G)
     beta = 0.75*beta_max # first-order optimum
@@ -102,13 +130,12 @@ def optimise_folded_cascode():
     cdd_w2 = NCH.look_up('CDD_CSS', gm_id=d.gm_id_cas, vds=0.2, L=d.Lcas) # vsb=0.2,
     fp2 = 1/2/np.pi*gm_css3*(1+gmb_gm3)/(1+2*cdd_css3*2*(cdd_w2/cdd_w3))
     print(f'Non dominant pole fp2 = {Float(fp2):!.2h}Hz') #%.2E Hz' % fp2)
-    fp2 = 2e9
+    # fp2 = 2e9
 
     # %% Design for a given settling time & noise budget, minimise power dissipation
     s.fu1 = 1/2/np.pi*np.log(1/s.ed)/s.ts
     print("fp2/s.fu1 = %.2f gives a phase margin of about "%(fp2/s.fu1))
 
-    # d.beta = beta_max*np.linspace(0.2,1,1000)
     d.beta = beta_max*np.arange(0.2,1,0.001)
 
     for L in d.L1:
@@ -124,9 +151,10 @@ def optimise_folded_cascode():
             rself_list.append(r.rself[index_min_id1])
             d.cself = r.cself[index_min_id1]
 
-        plt.figure(1)
-        # plt.plot(r.gm_id1, r.id1*1e3, label='L = %.2f um'%d.L1)
+        plt.figure(0)
         plt.plot(r.gm_id1, r.rself, label='L = %.2f um'%d.L1)
+        plt.figure(1)
+        plt.plot(r.gm_id1, r.id1*1e3, label='L = %.2f um'%d.L1)
         plt.figure(2)
         plt.plot(rself_list, label='L = %.2f um'%d.L1)
 
@@ -154,28 +182,35 @@ def optimise_folded_cascode():
     print(f"CLtot {r.CLtot[index_min_id1]:.2e} beta/beta_max {beta/beta_max:.3f} rself {rself:.2f}")
     print(f"L1 {d.L1} µm gm_id1 {gm_id1:.1f} S/A 2*id1 {2*id1*1e6:.0f} µA W1 {W1:.0f} µm")
     print(f"Lcas {d.Lcas} W2 {W2:.0f} W3 {W3:.0f} W5 {W5:.0f} µm")
-    print(f"CF {CF:.2e} CSS {CS:.2e} CL {CL:.2e} F")
+    print(f"CF {CF:.2e} CS {CS:.2e} CL {CL:.2e} F")
+
+    plt.figure(0)
+    plt.ylabel(r"$r_{self} = c_{self}/CL_{tot}$ [1]")
+    plt.xlabel(r"$g_m/I_D$ [S/A]")
+    plt.legend()
+    plt.savefig(f'output/{techno}_rself_vs_gmOverId.png')
+
 
     plt.figure(1)
-    # plt.ylabel(r"$I_D$ [mA]")
-    plt.ylabel(r"$r_{self} = c_{self}/CL_{tot}$ [1]")
+    plt.ylabel(r"$I_D$ [mA]")
     plt.xlabel(r"$g_m/I_D$ [S/A]")
     plt.title(r'$I_D$ vs. $g_m/I_D$ for varying $L$')
     # plt.xlim([5, 27])
     # plt.ylim([0, 1.2])
     plt.legend() #np.around(d.L1, decimals=2))
+    plt.tight_layout()
+    plt.savefig(f'output/{techno}_Id_vs_gmOverId.png')
 
     plt.figure(2)
     plt.ylabel(r"$r_{self} = c_{self}/CL_{tot}$ [1]")
     plt.xlabel("Iterations")
     plt.title("Self-loading")
     plt.legend()
+    plt.tight_layout()
+    plt.savefig(f'output/{techno}_rself_vs_iteration.png')
 
     plt.show()
 
-    # jd1 = NCH.look_up('ID_W', gm_id=d.gm_id1, vsb=0, L=d.L1)
-
-    pass
 
 def folded_cascode(NCH, PCH, s, d):
 
