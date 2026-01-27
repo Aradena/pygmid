@@ -37,7 +37,7 @@ def load_parameters_65nm():
     s.fan_out = 0.5
 
     # Design variable
-    d.L1 = [0.1, 0.2, 0.3, 0.4]
+    d.L1 = [0.1, 0.2] #, 0.3, 0.4]
     d.Lcas = 0.4  # L0 ~ 60
     # d.rself = 0
     d.cself = 0
@@ -110,28 +110,67 @@ def optimise_folded_cascode():
 
     # d.beta = beta_max*np.linspace(0.2,1,1000)
     d.beta = beta_max*np.arange(0.2,1,0.001)
-    plt.figure()
 
     for L in d.L1:
         d.L1 = L
         d.cself = 0
-        for i in range(1):
+        rself_list = []
+
+        for i in range(5):
             r = folded_cascode(NCH, PCH, s, d)
 
             # find minimum current point
             index_min_id1 = np.argmin(r.id1)
+            rself_list.append(r.rself[index_min_id1])
             d.cself = r.cself[index_min_id1]
 
-        plt.plot(r.gm_id1, r.id1*1e3, label='L = %.2f um'%d.L1)
-        # plt.plot(r.gm_id1, r.rself, label='L = %.2f um'%d.L1)
+        plt.figure(1)
+        # plt.plot(r.gm_id1, r.id1*1e3, label='L = %.2f um'%d.L1)
+        plt.plot(r.gm_id1, r.rself, label='L = %.2f um'%d.L1)
+        plt.figure(2)
+        plt.plot(rself_list, label='L = %.2f um'%d.L1)
 
-    plt.ylabel(r"$I_D$ [mA]")
-    # plt.ylabel(r"$r_{self}$ [1]")
+
+    # Compute transistor W sizes
+    id1 = r.id1[index_min_id1]
+    gm_id1 = r.gm_id1[index_min_id1]
+    jd1 = PCH.look_up('ID_W', gm_id=gm_id1, L=d.L1)
+    W1 = id1/jd1
+
+    jd3 = NCH.look_up('ID_W', gm_id=d.gm_id_cas, L=d.Lcas, vds=0.2)
+    W3 = id1/jd3
+    W2 = 2*W3
+
+    jd5 = PCH.look_up('ID_W', gm_id=d.gm_id_cas, L=d.Lcas, vds=0.2)
+    W5 = id1/jd5
+
+    beta = r.beta[index_min_id1]
+    CLtot = r.CLtot[index_min_id1]
+    rself = r.cself[index_min_id1]/CLtot
+    CF = (CLtot - r.cself[index_min_id1]) / (s.fan_out * s.G + 1 - beta )
+    CS = s.G * CF
+    CL = s.fan_out * CS
+
+    print(f"CLtot {r.CLtot[index_min_id1]:.2e} beta/beta_max {beta/beta_max:.3f} rself {rself:.2f}")
+    print(f"L1 {d.L1} µm gm_id1 {gm_id1:.1f} S/A 2*id1 {2*id1*1e6:.0f} µA W1 {W1:.0f} µm")
+    print(f"Lcas {d.Lcas} W2 {W2:.0f} W3 {W3:.0f} W5 {W5:.0f} µm")
+    print(f"CF {CF:.2e} CSS {CS:.2e} CL {CL:.2e} F")
+
+    plt.figure(1)
+    # plt.ylabel(r"$I_D$ [mA]")
+    plt.ylabel(r"$r_{self} = c_{self}/CL_{tot}$ [1]")
     plt.xlabel(r"$g_m/I_D$ [S/A]")
     plt.title(r'$I_D$ vs. $g_m/I_D$ for varying $L$')
     # plt.xlim([5, 27])
     # plt.ylim([0, 1.2])
     plt.legend() #np.around(d.L1, decimals=2))
+
+    plt.figure(2)
+    plt.ylabel(r"$r_{self} = c_{self}/CL_{tot}$ [1]")
+    plt.xlabel("Iterations")
+    plt.title("Self-loading")
+    plt.legend()
+
     plt.show()
 
     # jd1 = NCH.look_up('ID_W', gm_id=d.gm_id1, vsb=0, L=d.L1)
@@ -148,9 +187,10 @@ def folded_cascode(NCH, PCH, s, d):
     gm_id1 = d.gm_id1  # simplify saving singular optimum variable among input array
     gm1_gm3 = d.gm_id1 / d.gm_id_cas
     gm_gds1 = PCH.look_up('GM_GDS', gm_id=d.gm_id1, L=d.L1)
-    gm_gds2 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, L=d.Lcas)
-    wT1 = NCH.look_up('GM_CGG', gm_id=d.gm_id1, L=d.L1)  # Transit frequency
     cgd_cgg1 = PCH.look_up('CGD_CGG', gm_id=d.gm_id1, L=d.L1)
+    wT1 = PCH.look_up('GM_CGG', gm_id=d.gm_id1, L=d.L1)  # Transit frequency
+
+    gm_gds2 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, L=d.Lcas)
     cdd_gm3 = NCH.look_up('CDD_GM', gm_id=d.gm_id_cas, L=d.Lcas)
     cdd_gm4 = PCH.look_up('CDD_GM', gm_id=d.gm_id_cas, L=d.Lcas)
 
@@ -197,10 +237,15 @@ def folded_cascode(NCH, PCH, s, d):
         physical_index = np.where(d.gm_id1==gm_id1_physical)
 
         # Save
-        for var in ['id1', 'gm_id1', 'CLtot']: #['gm_id1', 'id1', 'wTi', 'Cgg1', 'Cgd1', 'kappa', 'CLtot', 'CF', 'CS', 'W', 'alpha']:
+        for var in ['id1', 'gm_id1', 'CLtot', 'beta']: #['gm_id1', 'id1', 'wTi', 'Cgg1', 'Cgd1', 'kappa', 'CLtot', 'CF', 'CS', 'W', 'alpha']:
             if var not in r.__dict__.keys():
                 setattr(r, var, np.array([]))
-            setattr(r, var, np.append(r.__dict__[var], locals()[var][physical_index]))
+
+            if locals()[var].size == 1:
+                toadd = locals()[var]
+            else:
+                toadd = locals()[var][physical_index]
+            setattr(r, var, np.append(r.__dict__[var], toadd))
         pass
 
     # Check hypothesis
