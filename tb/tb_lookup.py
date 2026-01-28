@@ -1,3 +1,5 @@
+import os
+
 from src.pygmid import Lookup as lk
 from src.pygmid import interp1
 import numpy as np
@@ -95,6 +97,8 @@ def optimise_folded_cascode():
     techno = 'xt018'
     # NCH, PCH, s, d, Lsweep = load_parameters_65nm()
     NCH, PCH, s, d, Lsweep = load_parameters_xt018()
+    if not os.path.exists('output/'):
+        os.makedirs('output/')
 
     beta_max = 1/(1+s.G)
     beta = 0.75*beta_max # first-order optimum
@@ -122,7 +126,6 @@ def optimise_folded_cascode():
     # plt.show()
     # plt.close()
 
-
     gmb_gm3 = NCH.look_up('GMB_GM', gm_id=d.gm_id_cas, vds=0.4, vsb=0.2, L=d.Lcas)
     gm_css3 = NCH.look_up('GM_CSS', gm_id=d.gm_id_cas, vds=0.4, vsb=0.2, L=d.Lcas)
     cdd_css3 = NCH.look_up('CDD_CSS', gm_id=d.gm_id_cas, vds=0.4, vsb=0.2, L=d.Lcas)
@@ -134,7 +137,7 @@ def optimise_folded_cascode():
 
     # %% Design for a given settling time & noise budget, minimise power dissipation
     s.fu1 = 1/2/np.pi*np.log(1/s.ed)/s.ts
-    print("fp2/s.fu1 = %.2f gives a phase margin of about "%(fp2/s.fu1))
+    print("fp2/s.fu1 = %.2f gives a phase margin of about ?? with fu1= %.2e "%(fp2/s.fu1, s.fu1))
 
     d.beta = beta_max*np.arange(0.2,1,0.001)
 
@@ -179,17 +182,26 @@ def optimise_folded_cascode():
     CS = s.G * CF
     CL = s.fan_out * CS
 
+    gm_gds2 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.2, L=d.Lcas)
+    gm_gds3 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.4, L=d.Lcas)
+    gm_gds4 = PCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.4, L=d.Lcas)
+    gm_gds5 = PCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.2, L=d.Lcas)
+    gm1_gm3 = gm_id1 / d.gm_id_cas
+    gm_gds1 = PCH.look_up('GM_GDS', gm_id=gm_id1, L=d.L1)
+    kappa = 1 / (1 + gm1_gm3 / gm_gds1 + 2 / gm_gds2)
+    L0 = beta*kappa/(1/(1+gm_gds5)/gm_gds4+1/(1+gm_gds2/3)/gm_gds3)
+
     print(f"CLtot {r.CLtot[index_min_id1]:.2e} beta/beta_max {beta/beta_max:.3f} rself {rself:.2f}")
     print(f"L1 {d.L1} µm gm_id1 {gm_id1:.1f} S/A 2*id1 {2*id1*1e6:.0f} µA W1 {W1:.0f} µm")
     print(f"Lcas {d.Lcas} W2 {W2:.0f} W3 {W3:.0f} W5 {W5:.0f} µm")
     print(f"CF {CF:.2e} CS {CS:.2e} CL {CL:.2e} F")
+    print(f"Loop gain L0 {L0:.1f}")
 
     plt.figure(0)
     plt.ylabel(r"$r_{self} = c_{self}/CL_{tot}$ [1]")
     plt.xlabel(r"$g_m/I_D$ [S/A]")
     plt.legend()
     plt.savefig(f'output/{techno}_rself_vs_gmOverId.png')
-
 
     plt.figure(1)
     plt.ylabel(r"$I_D$ [mA]")

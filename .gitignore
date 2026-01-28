@@ -3,6 +3,7 @@
 dist/
 __pycache__
 build/
+tb/output/
 /MATLAB
 src/**/*.png
 .venv
