@@ -105,10 +105,10 @@ def optimise_folded_cascode():
     kappa = 0.7 # conservative optimum
 
     # Channel length sweep
-    gm_gds2 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.2, L=Lsweep)
-    gm_gds3 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.4, L=Lsweep)
-    gm_gds4 = PCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.4, L=Lsweep).reshape(-1,1)
-    gm_gds5 = PCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.2, L=Lsweep)[:, np.newaxis]
+    gm_gds2 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.2, vsb=0, L=Lsweep)
+    gm_gds3 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.4, vsb=0.2, L=Lsweep)
+    gm_gds4 = PCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.4, vsb=0.2, L=Lsweep).reshape(-1,1)
+    gm_gds5 = PCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.2, vsb=0, L=Lsweep)[:, np.newaxis]
     # alternatives for transforming a (horizontal) 1D vector to a vertical vector
     # requires to add a dimension
 
@@ -130,7 +130,7 @@ def optimise_folded_cascode():
     gm_css3 = NCH.look_up('GM_CSS', gm_id=d.gm_id_cas, vds=0.4, vsb=0.2, L=d.Lcas)
     cdd_css3 = NCH.look_up('CDD_CSS', gm_id=d.gm_id_cas, vds=0.4, vsb=0.2, L=d.Lcas)
     cdd_w3 = NCH.look_up('CDD_CSS', gm_id=d.gm_id_cas, vds=0.4, vsb=0.2, L=d.Lcas)
-    cdd_w2 = NCH.look_up('CDD_CSS', gm_id=d.gm_id_cas, vds=0.2, L=d.Lcas) # vsb=0.2,
+    cdd_w2 = NCH.look_up('CDD_CSS', gm_id=d.gm_id_cas, vds=0.2, vsb=0, L=d.Lcas)
     fp2 = 1/2/np.pi*gm_css3*(1+gmb_gm3)/(1+2*cdd_css3*2*(cdd_w2/cdd_w3))
     print(f'Non dominant pole fp2 = {Float(fp2):!.2h}Hz') #%.2E Hz' % fp2)
     # fp2 = 2e9
@@ -165,14 +165,14 @@ def optimise_folded_cascode():
     # Compute transistor W sizes
     id1 = r.id1[index_min_id1]
     gm_id1 = r.gm_id1[index_min_id1]
-    jd1 = PCH.look_up('ID_W', gm_id=gm_id1, L=d.L1)
+    jd1 = PCH.look_up('ID_W', gm_id=gm_id1, L=d.L1, vsb=0)
     W1 = id1/jd1
 
-    jd3 = NCH.look_up('ID_W', gm_id=d.gm_id_cas, L=d.Lcas, vds=0.2)
+    jd3 = NCH.look_up('ID_W', gm_id=d.gm_id_cas, L=d.Lcas, vds=0.4, vsb=0.2)
     W3 = id1/jd3
     W2 = 2*W3
 
-    jd5 = PCH.look_up('ID_W', gm_id=d.gm_id_cas, L=d.Lcas, vds=0.2)
+    jd5 = PCH.look_up('ID_W', gm_id=d.gm_id_cas, L=d.Lcas, vds=0.2, vsb=0)
     W5 = id1/jd5
 
     beta = r.beta[index_min_id1]
@@ -182,12 +182,12 @@ def optimise_folded_cascode():
     CS = s.G * CF
     CL = s.fan_out * CS
 
-    gm_gds2 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.2, L=d.Lcas)
-    gm_gds3 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.4, L=d.Lcas)
-    gm_gds4 = PCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.4, L=d.Lcas)
-    gm_gds5 = PCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.2, L=d.Lcas)
+    gm_gds2 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.2, vsb=0, L=d.Lcas)
+    gm_gds3 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.4, vsb=0.2, L=d.Lcas)
+    gm_gds4 = PCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.4, vsb=0.2, L=d.Lcas)
+    gm_gds5 = PCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.2, vsb=0, L=d.Lcas)
     gm1_gm3 = gm_id1 / d.gm_id_cas
-    gm_gds1 = PCH.look_up('GM_GDS', gm_id=gm_id1, L=d.L1)
+    gm_gds1 = PCH.look_up('GM_GDS', gm_id=gm_id1, L=d.L1, vsb=0)
     kappa = 1 / (1 + gm1_gm3 / gm_gds1 + 2 / gm_gds2)
     L0 = beta*kappa/(1/(1+gm_gds5)/gm_gds4+1/(1+gm_gds2/3)/gm_gds3)
 
@@ -233,13 +233,13 @@ def folded_cascode(NCH, PCH, s, d):
     # Precomputation
     gm_id1 = d.gm_id1  # simplify saving singular optimum variable among input array
     gm1_gm3 = d.gm_id1 / d.gm_id_cas
-    gm_gds1 = PCH.look_up('GM_GDS', gm_id=d.gm_id1, L=d.L1)
-    cgd_cgg1 = PCH.look_up('CGD_CGG', gm_id=d.gm_id1, L=d.L1)
+    gm_gds1 = PCH.look_up('GM_GDS', gm_id=d.gm_id1, vsb=0, L=d.L1)
+    cgd_cgg1 = PCH.look_up('CGD_CGG', gm_id=d.gm_id1, vsb=0, L=d.L1)
     wT1 = PCH.look_up('GM_CGG', gm_id=d.gm_id1, L=d.L1)  # Transit frequency
 
-    gm_gds2 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, L=d.Lcas)
-    cdd_gm3 = NCH.look_up('CDD_GM', gm_id=d.gm_id_cas, L=d.Lcas)
-    cdd_gm4 = PCH.look_up('CDD_GM', gm_id=d.gm_id_cas, L=d.Lcas)
+    gm_gds2 = NCH.look_up('GM_GDS', gm_id=d.gm_id_cas, vds=0.2, vsb=0, L=d.Lcas)
+    cdd_gm3 = NCH.look_up('CDD_GM', gm_id=d.gm_id_cas, vds=0.4, vsb=0.2, L=d.Lcas)
+    cdd_gm4 = PCH.look_up('CDD_GM', gm_id=d.gm_id_cas, vds=0.4, L=d.Lcas)
 
     # cgd_w1 = NCH.look_up('CGD_W', gm_id=d.gm_id1, vsb=0, L=d.L1)
     # jd1 = NCH.look_up('ID_W', gm_id=d.gm_id1, vsb=0, L=d.L1)
