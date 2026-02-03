@@ -1,7 +1,11 @@
+import path
 import sys
 
+# directory reach
+directory = path.path(__file__).abspath()
+
 # setting path
-sys.path.append('../src')
+sys.path.append(directory.parent.parent)
 
 from src import pygmid
 
