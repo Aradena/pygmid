@@ -1,3 +1,8 @@
+import sys
+
+# setting path
+sys.path.append('../src')
+
 from src import pygmid
 
 if __name__ == "__main__":
